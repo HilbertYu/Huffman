@@ -55,9 +55,48 @@ bool node_compare(Node* n1, Node* n2) {
     return n1->weight < n2->weight;
 }
 
+Node* setup_huffman_tree(forest_t& forest) {
+    for (; forest.size()>=2;) {
+        std::sort(forest.begin(), forest.end(), node_compare);
+        Node* pnode = new Node();
+
+        pnode->left = forest.at(0);
+        pnode->right = forest.at(1);
+        pnode->weight = pnode->left->weight + pnode->right->weight;
+
+        forest.pop_front();
+        forest.pop_front();
+        forest.push_back(pnode);
+    }
+
+    return forest.front();
+
+}
+
+
+/*===========================================================================*/
+void print_postfix(Node* node) {
+    if (node->left) {
+        printf("[L]\n");
+        print_postfix(node->left);
+    } else {
+        printf("[Le]\n");
+    }
+
+    if (node->right) {
+        printf("[R]\n");
+        print_postfix(node->right);
+    } else {
+        printf("[Re]\n");
+    }
+
+    printf("[%u]", node->weight);
+}
+/*===========================================================================*/
+
 int main(void) {
 
-    char src_buf[] = "ABBCCD";
+    char src_buf[] = "ABBCCDEEE";
     weightlen_t weigth_table[256];
     forest_t forest;
     memset(weigth_table, 0, 256*sizeof(weightlen_t));
@@ -79,12 +118,7 @@ int main(void) {
     // }
     //
 
-    std::sort(forest.begin(), forest.end(), node_compare);
-    // for(size_t i = 0; i != forest.size(); ++i) {
-    //     if (forest[i]->weight) {
-    //         printf("i = %lu, w = %u\n",i, forest[i]->weight );
-    //     }
-    // }
-
+    Node * p = setup_huffman_tree(forest);
+    print_postfix(p);
     return 0;
 }
