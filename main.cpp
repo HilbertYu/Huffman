@@ -5,6 +5,7 @@
 #include <deque>
 #include <assert.h>
 
+#include <algorithm>
 struct Node;
 
 typedef uint8_t uchar;
@@ -50,6 +51,10 @@ void init_forest_by_weight_table(forest_t& forest, const weightlen_t* w_table) {
 
 }
 
+bool node_compare(Node* n1, Node* n2) {
+    return n1->weight < n2->weight;
+}
+
 int main(void) {
 
     char src_buf[] = "ABBCCD";
@@ -67,10 +72,19 @@ int main(void) {
     ///init_forest
     init_forest_by_weight_table(forest, weigth_table);
 
-    for(size_t i = 0; i != forest.size(); ++i) {
-        if (forest[i]->weight) {
-            printf("i = %lu, w = %u\n",i, forest[i]->weight );
-        }
-    }
+    // for(size_t i = 0; i != forest.size(); ++i) {
+    //     if (forest[i]->weight) {
+    //         printf("i = %lu, w = %u\n",i, forest[i]->weight );
+    //     }
+    // }
+    //
+
+    std::sort(forest.begin(), forest.end(), node_compare);
+    // for(size_t i = 0; i != forest.size(); ++i) {
+    //     if (forest[i]->weight) {
+    //         printf("i = %lu, w = %u\n",i, forest[i]->weight );
+    //     }
+    // }
+
     return 0;
 }
