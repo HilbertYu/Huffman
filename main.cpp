@@ -230,7 +230,8 @@ int main(void) {
     //
 
     Node * p = setup_huffman_tree(forest);
-   // print_postfix(p);
+    print_postfix(p);
+//    return 0;
 
     encoding_t encoding_table[256];
     memset(encoding_table, 0, sizeof(encoding_table));
@@ -252,16 +253,19 @@ int main(void) {
     // return 0;
 
     uint32_t table_len = 0;
+    uint32_t encoding_bit_stream_size = 0;
     for (int i = 0; i < 256; ++i) {
         if (!encoding_table[i].len)
             continue;
 
         table_len += 16 + encoding_table[i].len;
+        encoding_bit_stream_size += encoding_table[i].len*weight_table[i];
     }
     table_len += 32;
 
     printf("table_len (bit) = %d\n", table_len);
     printf("table_len (byte) = %d\n", table_len/8 + 1);
+    printf("encoding_size = %d\n", encoding_bit_stream_size);
 
     /*===========================================================================*/
     uint32_t header_len = table_len/8 + 1;
@@ -271,6 +275,7 @@ int main(void) {
         memset(header_table, 0, header_len);
         int  bit_cur = 0;
         bit_add(header_table, &table_len, bit_cur, 32);
+        bit_cur += 32;
 
 
 
@@ -281,7 +286,6 @@ int main(void) {
         // exit(-1);
         /*===========================================================================*/
 
-        bit_cur += 32;
 
         for(size_t i = 0; i < 256; ++i) {
             if (!weight_table[i])
@@ -297,6 +301,11 @@ int main(void) {
             bit_cur += encoding_table[i].len;
 
         }
+
+
+
+        bit_add(header_table, &encoding_bit_stream_size, bit_cur, 32);
+        bit_cur += 32;
 
         printf("raw encoding...\n");
         int encoding_raw_size = 0;
@@ -333,7 +342,8 @@ int main(void) {
         printf("header_len = %u\n", header_len);
         printf("header_len___ = %u\n", header_table[0]);
 
-        bit_add(bit_raw_data, header_table, 0, 20, 124);
+        printf("table_len = %d\n", table_len);
+        bit_add(bit_raw_data, header_table, 0, 20, table_len + 32);
 
         printf("header_table[0] = %u\n", header_table[0]);
         printf("bit_raw_data[0] = %u\n", bit_raw_data[0]);
