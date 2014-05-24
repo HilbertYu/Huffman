@@ -21,7 +21,14 @@ struct Node {
     Node* right;
 };
 /*===========================================================================*/
-
+/**
+ *  @brief conut the freqence.
+ *  @param des_buf output
+ *  @param src_buf source data.
+ *  @param src_len the size of the source data (bytes)
+ *
+ *
+ */
 void create_weight_table(weightlen_t *des_buf, uchar *src_buf, size_t src_len) {
     for (size_t i = 0; i != src_len; ++i) {
         // printf("src_buf[%lu] =%d\n", i, src_buf[i]);
@@ -33,6 +40,8 @@ void create_weight_table(weightlen_t *des_buf, uchar *src_buf, size_t src_len) {
         //         printf("--------------------------------------------\n");
     }
 }
+
+
 
 void init_forest_by_weight_table(forest_t& forest, const weightlen_t* w_table) {
 
@@ -135,28 +144,6 @@ void ff(Node *node, encoding_t* encoding_data, encoding_t* e_table) {
 }
 
 int bit_add(void* arg_des, const void* arg_src, int start_bit, int num_bit, int src_offset = 0) {
-
-
-#if 0
-    uchar *des = (uchar*) arg_des;
-    const uchar* src = (uchar*) arg_src;
-
-    unsigned int bit_cur= 0;
-    for (int i = 0; i <  num_bit; ++i) {
-        bit_cur = (start_bit + i) % 8;
-//        des[(i + start_bit)>>3] |= (src[i >> 8] & (0x1 << (i % 8))) << bit_cur;
-        des[(i + start_bit)>>3] |= ((src[i >> 3] >> (i % 8)) & 0x1 ) << bit_cur;
-//        printf("((%d))\n", (i+start_bit)>>3);
-//        printf("bit_cur = %d\n", bit_cur);
-        //printf("--%d--\n",(src[i >> 8] & (0x1 << i)) << bit_cur);
-        printf("i = %d, -%d--\n", i, (src[i >> 3] >> (i % 8)) & 0x1 );
-        printf("i >> 3 = %d\n", i >> 3);
-        printf("i mod  8 = %u\n", i % 8);
-    }
-
-    return start_bit + num_bit;
-#endif
-#if 1
     uchar *des = (uchar*) arg_des;
     const uchar* src = (uchar*) arg_src;
 
@@ -174,7 +161,6 @@ int bit_add(void* arg_des, const void* arg_src, int start_bit, int num_bit, int 
     }
 
     return start_bit + num_bit;
-#endif
 }
 
 
@@ -326,6 +312,55 @@ int main(void) {
         printf("ecoding_raw_size = %d\n", encoding_raw_size);
     }
 
+
+    uint32_t total_len = table_len + 8 + encoding_bit_stream_size;
+    printf("total len = %u\n", total_len);
+    printf("table = %u, raw = %u\n", table_len, encoding_bit_stream_size);
+    printf("table = ##%u, raw = %u\n", header_table[0], header_table[4]);
+
+
+    ///reconstruct the huffman tree
+    Node * htree = NULL;
+    {
+        uchar rec_table[1024];
+        memset(rec_table, 0, sizeof(rec_table));
+        bit_add(rec_table, header_table, 0, header_table[0], 32);
+
+        printf("xxx %c\n", header_table[4]);
+        printf("xxx %c\n", rec_table[0]);
+
+        htree = new Node();
+        htree->index = htree->weight = 0;
+        htree->left = htree->right = NULL;
+        uint32_t bit_cur = 0;
+        for (;;) {
+            uchar ch = 0;
+            uchar len = 0;
+            uint32_t data = 0;
+
+            bit_add(&ch, rec_table, 0, 8, bit_cur);
+            bit_cur += 8;
+
+            bit_add(&len, rec_table, 0, 8, bit_cur);
+            bit_cur += 8;
+
+            bit_add(&data, rec_table, 0, len, bit_cur);
+            bit_cur += len;
+
+
+            printf("ch = %c, ", ch);
+            printf("len = %u", len);
+            printf("bit_cur = %u/%u", bit_cur, table_len-32);
+            printf("\n");
+
+            if (bit_cur >= table_len-32)
+                break;
+
+        }
+
+        return 0;
+    }
+
     ///decoding
     {
         uchar bit_raw_data[1024];
@@ -351,25 +386,8 @@ int main(void) {
     }
 
 
-
     delete [] header_table;
     header_table = NULL;
-    /*===========================================================================*/
-
-
-    /*===========================================================================*/
-#if 0
-    uchar kk[1024];
-    memset(kk, 0, sizeof(kk));
-    int l = 14;
-    bit_add(kk, (uchar*)&l, 1, 8);
-
-    for(int j = 0; j < 8; ++j) {
-        printf("[%u]", (kk[0] >> j) & 0x1);
-    }
-    printf("\n");
-#endif
-    /*===========================================================================*/
     return 0;
 
 }
